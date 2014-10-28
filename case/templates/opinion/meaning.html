@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>系统界面</title>
+
+    <!-- Bootstrap core CSS -->
+    <!-- <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="../../static/opinion/css/bootstrap.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap-responsive.min.css') }}" rel="stylesheet"> -->
+
+    <!-- Custom styles for this template -->
+    <!-- <link href="../../static/opinion/css/justified-nav.css" rel="stylesheet"> -->
+    <!-- <link href="../../static/opinion/css/style.css" rel="stylesheet"> -->
+    <!-- <link href="../../static/opinion/css/base.css" rel="stylesheet"> -->
+
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="../../static/opinion/css/bootstrap.css" rel="stylesheet">
+    <link href="../../static/opinion/css/justified-nav.css" rel="stylesheet">
+    <link href="../../static/opinion/css/style.css" rel="stylesheet">
+    <link href="../../static/opinion/css/base.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap-responsive.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/jquery-ui.css" />
+
+
+    <script src="../../static/opinion/js/jquery-1.9.1.min.js"></script>
+    <script src="../../static/opinion/js/highcharts.js"></script>
+    <script src="../../static/opinion/js/highcharts.js"></script>
+    <script src="../../static/opinion/js/highcharts-more.js"></script>
+    <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+
+    <script type="text/javascript" src="../../static/opinion/js/timeline.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../static/opinion/css/timeline.css">
+    <link rel="stylesheet" href="../../static/opinion/js/reveal/example4/colorbox.css" />
+    <script src="../../static/opinion/js/reveal/jquery.colorbox.js"></script>
+    <script type="text/javascript">
+        $("#search_all").click(function() {
+        window.location.href = "meaning.html#";
+        });
+        var OPINION_TIMELINE = ('{{opinion_timeline}}');
+        console.log(OPINION_TIMELINE);
+        google.load("visualization", "1");
+        google.setOnLoadCallback(drawVisualization);
+        var timeline;
+        var data;
+        function getSelectedRow(){
+            var row = undefined;
+            var sel = timeline.getSelection();
+            if (sel.length){
+                if (sel[0].row != undefined){
+                    row = sel[0].row;
+                }
+            }
+            return row;
+        }
+        // Called when the Visualization API is loaded.
+        function drawVisualization() {
+            // Create a JSON data table
+            data = [
+                {
+                    'start': new Date(2014,6,26),
+                    'end': new Date(2014,7,2),
+                    'content': '钓鱼岛 +20% -20% |60%'
+                },
+                {
+                    'start': new Date(2014,7,26),
+                    'end': new Date(2014,8,2),
+                    'content': '日货 +20% -20% |60%'
+                },
+                {
+                    'start': new Date(2014,7,13),
+                    'end': new Date(2014,7,20),
+                    'content': '九一八 +20% -20% |60%'
+                },
+                {
+                    'start': new Date(2014,7,31),
+                    'end': new Date(2014,8,3),
+                    'content': '国耻 +20% -20% |60%'
+                },
+                {
+                    'start': new Date(2014,8,31),
+                    'end': new Date(2014,9,3),
+                    'content': '历史 +20% -20% |60%'
+                },
+            ];
+            // specify options
+            var options = {
+                'width':  '100%',
+                'height': '300px',
+                'editable': false,   // enable dragging and editing events
+                'style': 'box',
+                'timeChangeable': false,
+                'unselectable': false,
+                'groupChangeable': false,
+                'timeChangeable': false
+            };
+            // Instantiate our timeline object.
+            timeline = new links.Timeline(document.getElementById('mytimeline'));
+            google.visualization.events.addListener(timeline, 'select', onadd);
+            // Draw our timeline with the created data and options
+            timeline.draw(data, options);
+        }
+        var onadd = function(){
+            var row = getSelectedRow();
+            $.colorbox({inline:true, href:"#area"});
+            // document.getElementById("info").innerHTML += "item " + row + " created<br>";
+            // $.colorbox({inline: true, onComplete:function(){
+            //     area();
+            // }});
+            // function area() {
+            //     $('#area').highcharts({
+            //         chart: {
+            //             type: 'area',
+            //             spacingBottom: 30
+            //         },
+            //         title: {
+            //             text: '簇缩放图'
+            //         },
+            //         legend: {
+            //             layout: 'vertical',
+            //             align: 'left',
+            //             verticalAlign: 'top',
+            //             x: 150,
+            //             y: 100,
+            //             floating: true,
+            //             borderWidth: 1,
+            //             backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+            //         },
+            //         xAxis: {
+            //             categories: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月']
+            //         },
+            //         yAxis: {
+            //             title: {
+            //                 text: '大小'
+            //             },
+            //             labels: {
+            //                 formatter: function() {
+            //                     return this.value;
+            //                 }
+            //             }
+            //         },
+            //         tooltip: {
+            //             formatter: function() {
+            //                 return '<b>'+ this.series.name +'</b><br/>'+
+            //                 this.x +': '+ this.y;
+            //             }
+            //         },
+            //         plotOptions: {
+            //             area: {
+            //                 fillOpacity: 0.5
+            //             }
+            //         },
+            //         credits: {
+            //             enabled: false
+            //         },
+            //         series: [{
+            //             name: '观点1',
+            //             data: [0, 1, 4, 4, 5, 2, 3, 7]
+            //         }, {
+            //             name: '观点2',
+            //             data: [1, 0, 3, 5, 3, 1, 2, 1]
+            //         }]
+            //     });
+            // };
+            
+        }
+
+
+/**        var onadd = function () {
+            var row = getSelectedRow();
+            document.getElementById("info").innerHTML += "item " + row + " created<br>";
+            //var content = data.getValue(row, 2);
+            var newContent = prompt("Enter content");
+            if (newContent != undefined) {
+                data.setValue(row, 2, newContent);
+                timeline.redraw();
+            }
+            else {
+                // cancel adding the item
+                timeline.cancelAdd();
+            }
+        };
+**/
+    </script>
+
+    <!-- 弹出层 -->
+    <style>
+       /* body{font:12px/1.2 Verdana, sans-serif; padding:0 10px;}*/
+        a:link, a:visited{text-decoration:none; color:#416CE5; border-bottom:1px solid #416CE5;}
+        h2{font-size:20px; margin:15px 0 0 0;}
+        /*定义积极文本等的标题样式*/
+        h3{font-size:18px; margin:15px 850px 0 0; color:#333333; font-weight: bold;background-color:rgba(124,181,236,0.5); padding:5px}
+        h4{font-size:18px; margin:15px 850px 0 0; color:#333333; font-weight: bold;background-color:rgba(67,67,72,0.5); padding:5px}
+        h5{font-size:18px; margin:15px 850px 0 0; color:#333333; font-weight: bold;background-color:rgba(144,237,125,0.5); padding:5px}
+    </style>
+    <script>
+        $(document).ready(function(){
+                //Examples of how to assign the Colorbox event to elements
+            $(".group1").colorbox({rel:'group1'});
+            $(".group2").colorbox({rel:'group2', transition:"fade"});
+            $(".group3").colorbox({rel:'group3', transition:"none", width:"75%", height:"75%"});
+            $(".group4").colorbox({rel:'group4', slideshow:true});
+            $(".ajax").colorbox();
+            $(".youtube").colorbox({iframe:true, innerWidth:640, innerHeight:390});
+            $(".vimeo").colorbox({iframe:true, innerWidth:500, innerHeight:409});
+            $(".iframe").colorbox({iframe:true, width:"80%", height:"80%"});
+            $(".inline").colorbox({inline:true});
+            $(".callbacks").colorbox({
+                onOpen:function(){ alert('onOpen: colorbox is about to open'); },
+                onLoad:function(){ alert('onLoad: colorbox has started to load the targeted content'); },
+                onComplete:function(){ alert('onComplete: colorbox has displayed the loaded content'); },
+                onCleanup:function(){ alert('onCleanup: colorbox has begun the close process'); },
+                onClosed:function(){ alert('onClosed: colorbox has completely closed'); }
+            });
+
+            $('.non-retina').colorbox({rel:'group5', transition:'none'})
+            $('.retina').colorbox({rel:'group5', transition:'none', retinaImage:true, retinaUrl:true});
+            
+            //Example of preserving a JavaScript event for inline calls.
+            $("#click").click(function(){ 
+                $('#click').css({"background-color":"#f00", "color":"#fff", "cursor":"inherit"}).text("Open this window again and this message will still be here.");
+                return false;
+            });
+        });
+    </script>
+</head>
+<div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+              <a class="brand" href="/login"><strong><font size="+2">语义要素:九一八</font></strong></a>
+            <a class="brand"><small><font size="+1"> > </font></small></a>
+              <a class="brand" href="/evolution/topic_ajax_hot/"><small><font size="+1">微博</font></small></a>
+              <a class="brand" href="/evolution/topic_ajax_hot/"><small><font size="+1">新闻</font></small></a>
+              <a class="brand" href="/evolution/topic_ajax_hot/"><small><font size="+1">博客</font></small></a>
+              <a class="brand" href="/evolution/topic_ajax_hot/"><small><font size="+1">论坛</font></small></a>
+            </div>
+          </div>
+        </div>
+<body onload="drawVisualization();">
+    <div class="container-fluid" style="padding-right:100px;padding-left:100px">
+        <div class="row-fluid">
+          <div id="mytimeline" style="padding=0px">
+            <hr></hr>
+            <h2>观点时间轴</h2>
+            <hr></hr>
+          </div>
+          <hr class="soften">
+        </div>
+      <!-- Example row of columns -->
+        <div class="row-fluid">
+            <div class="col-lg-4">
+            <h2>簇三元组</h2>
+            <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>序号</th>
+                    <th>项1</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>1</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                  </tr>
+                  <tr>
+                    <th>2</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                  </tr>
+                  <tr>
+                    <th>3</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                  </tr>
+                  <tr>
+                    <th>4</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                    <th>内容</th>
+                  </tr>
+                </tbody>
+            </table>
+            </div>
+            <div class="col-lg-1">
+            </div>
+            <div class="col-lg-7">
+                <div id="pie_chart"></div>
+            </div>
+        </div>
+        <div class="row-fluid">
+          <div id="area"></div>
+          </div>
+        <hr class="soften">
+        <div class="row-fluid">
+          <h2>观点情绪代表文本</h2>
+          <h3>积极文本</h3>
+          <p>博主最有爱了，，小伙伴们快来围观求抽中@周婷不做重口味好多年 @垦爷儿@怪咖么么-[亲亲]</p>
+          <p>博主最有爱了，，小伙伴们快来围观求抽中@周婷不做重口味好多年 @垦爷儿@怪咖么么-[亲亲]</p>
+          <h4>消极文本</h4>
+          <p>博主最有爱了，，小伙伴们快来围观求抽中@周婷不做重口味好多年 @垦爷儿@怪咖么么-[亲亲]</p>
+          <p>博主最有爱了，，小伙伴们快来围观求抽中@周婷不做重口味好多年 @垦爷儿@怪咖么么-[亲亲]</p>
+          <h5>中性文本</h5>
+          <p>博主最有爱了，，小伙伴们快来围观求抽中@周婷不做重口味好多年 @垦爷儿@怪咖么么-[亲亲]</p>
+          <p><a class="btn btn-primary" href="#">查看详情 &raquo;</a></p>
+        </div>
+      <!-- Site footer -->
+      <div class="footer">
+        <p>&copy; IDEC 2014</p>
+      </div>
+    </div> <!-- /container -->
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <div class="row-fluid">
+          <div id="info"></div>
+          </div>
+</body>
+<script>
+  $(function area() {
+        $('#area').highcharts({
+            chart: {
+                type: 'area',
+                spacingBottom: 30
+            },
+            title: {
+                text: '观点情感比例'
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'left',
+                verticalAlign: 'top',
+                x: 150,
+                y: 100,
+                floating: true,
+                borderWidth: 1,
+                backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+            },
+            xAxis: {
+                categories: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月']
+            },
+            yAxis: {
+                title: {
+                    text: '大小'
+                },
+                labels: {
+                    formatter: function() {
+                        return this.value;
+                    }
+                }
+            },
+            tooltip: {
+                formatter: function() {
+                    return '<b>'+ this.series.name +'</b><br/>'+
+                    this.x +': '+ this.y;
+                }
+            },
+            plotOptions: {
+                area: {
+                    fillOpacity: 0.5
+                }
+            },
+            credits: {
+                enabled: false
+            },
+            series: [{
+                name: '积极',
+                data: [0, 1, 4, 2, 3, 2, 3, 1]
+            }, 
+            {
+                name: '消极',
+                data: [1, 2, 1, 2, 1, 2, 2, 1]
+            },
+            {
+                name: '中性',
+                data: [4, 2, 0, 1, 1, 1, 0, 3]
+            }]
+        });
+    });
+  </script>
+<script>
+    var keyword = String('{{keyword}}');
+    console.log(keyword);
+    // $(document).ready(function(){  
+    //     init_statistics(keyword);
+    // })
+    function chg_emotion_pie(raw_data){
+        $('#pie_chart').empty();
+        Pie(raw_data)
+    }
+    function init_statistics(keyword){
+    $.ajax({
+            url: "/opinion/weibo/?keyword=" + keyword,
+            type: "GET",
+            dataType:"json",
+            success: function(data){
+                chg_emotion_pie(data);
+            }
+        });
+    }
+    $(function Pie(data) {
+        $('#pie_chart').highcharts({
+            credits: {
+                enabled: false
+            },
+            chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false
+            },
+            title: {
+                text: '代表观点比例'
+            },
+            tooltip: {
+              pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        color: '#000000',
+                        connectorColor: '#000000',
+                        format: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                    }
+                }
+            },
+            series: [{
+                type: 'pie',
+                name: '代表观点比例',
+                data: [
+                    ['钓鱼岛',   45.0],
+                    ['日货',       26.8],
+                    {
+                        name: '九一八',
+                        y: 12.8,
+                        sliced: true,
+                        selected: true
+                    },
+                    ['国耻',    8.5],
+                    ['历史',     6.2],
+                    ['其他',   0.7]
+                ]
+            }]
+        });
+    });
+</script>
+</html>

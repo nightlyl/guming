@@ -1,0 +1,22 @@
+
+        #tabContainer
+        {
+            margin: 0px;
+        }
+        #tabContainer li
+        {
+            float: left;
+            width: 100px;
+            margin: 0;
+            background: #efefef;
+            text-align: center;
+            border:1px solid #F0F0F0;
+        }
+        #tabContainer a
+        {
+            display: block;
+        }
+        #tabContainer a.on
+        {
+            background: pink;
+        }
