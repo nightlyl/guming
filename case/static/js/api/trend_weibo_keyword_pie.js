@@ -1,3 +1,18 @@
+ $('#starttime').datetimepicker({
+    timeFormat: 'Y-M-d HH:mm:ss'
+});
+ $('#endtime').datetimepicker({
+    timeFormat:'HH:mm:ss'
+});
+
+//function settime{}
+
+
+
+function redirect(ts){
+    window.location.href = '/index/moodlens?query=' + QUERY + '&during=' + ts;
+}
+
 // Date format
 Date.prototype.format = function(format) { 
     var o = { 
@@ -25,20 +40,17 @@ function TrendsLine(query, start_ts, end_ts, pointInterval){
     this.end_ts = end_ts; // 终止时间戳
     this.pointInterval = pointInterval; // 图上一点的时间间隔
     this.during = end_ts - start_ts; // 整个时间范围
-    this.pie_ajax_url = function(query, end_ts, during){
-        return "/moodlens/pie/?ts=" + end_ts + "&query=" + query + "&during=" + during;
-    }
     this.keywords_ajax_url = function(query, end_ts, during, emotion){
-        return "/moodlens/keywords_data/?ts=" + end_ts + "&query=" + "东盟,博览会" + "&during=" + during + "&emotion=" + emotion;
+        return "/guming/keywords_data/?ts=" + end_ts + "&query=" + query + "&during=" + during + "&emotion=" + emotion;
     }
-    this.weibos_ajax_url = function(query, end_ts, during, emotion, limit){
-        return "/guming/sentiment_post/?query=" + query + "&during=" + during + "&size=" + limit ;
+    this.weibos_ajax_url = function(query, end_ts, during, from, size){
+        return "/guming/sentiment_post/?query=" + query + "&during=" + during + "&from=" + from + "&size=" + size + "&ts=" + end_ts;
     }
     this.count_ajax_url = function(query, end_ts, during, emotion){
-        return "/moodlens/data/?query=" + query + "&ts=" + end_ts + "&during=" + during + "&emotion=" + emotion;
+        return "/guming/data/?query=" + query + "&ts=" + end_ts + "&during=" + during + "&emotion=" + emotion;
     }
     this.peak_ajax_url = function(data, ts_list, during, emotion){
-        return "/moodlens/emotionpeak/?lis=" + data.join(',') + "&ts=" + ts_list + '&during=' + during + "&emotion=" + emotion;
+        return "/guming/emotionpeak/?lis=" + data.join(',') + "&ts=" + ts_list + '&during=' + during + "&emotion=" + emotion;
     }
     this.ajax_method = "GET";
     this.call_sync_ajax_request = function(url, method, callback){
@@ -63,7 +75,8 @@ function TrendsLine(query, start_ts, end_ts, pointInterval){
     this.range_keywords_data = {};
     this.range_weibos_data = {};
     this.top_keywords_limit = 50; // 和计算相关的50，实际返回10
-    this.top_weibos_limit = 20; // 和计算相关的50，实际返回10
+    this.one_page_info_limit = 5; // 加载一次的信息条数
+    this.top_weibos_limit = 100; // 返回100条重要帖子
     this.max_keywords_size = 50;
     this.min_keywords_size = 2;
     this.pie_title = '情绪饼图';
@@ -74,10 +87,12 @@ function TrendsLine(query, start_ts, end_ts, pointInterval){
     this.trend_chart;
 
     this.names = {
-        'happy': '积极',
-        'angry': '愤怒',
-        'sad': '悲伤',
-        'news': '新闻'
+        'positive': '积极',
+        'negative': '消极',
+        'positive_stock': '股东积极',
+        'negative_stock': '股东消极',
+        'positive_ustock': '非股东积极',
+        'negative_ustock': '非股东消极'
     }
 
     this.trend_count_obj = {
@@ -86,41 +101,11 @@ function TrendsLine(query, start_ts, end_ts, pointInterval){
         'ratio': {}
     };
 
+    this.post_offset = 0;
+
     for (var name in this.names){
         this.trend_count_obj['count'][name] = [];
         this.trend_count_obj['ratio'][name] = [];
-    }
-}
-
-// instance method, 初始化时获取整个时间段的饼图数据并绘制
-TrendsLine.prototype.initPullDrawPie = function(){
-    that = this;
-    var names = this.names;
-    var ajax_url = this.pie_ajax_url(this.query, this.end_ts, this.during);
-    this.call_async_ajax_request(ajax_url, this.ajax_method, range_count_callback);
-
-    function range_count_callback(data){
-        var pie_data = [];
-        for (var status in data){
-            var count = data[status];
-            pie_data.push({
-                value: count,
-                name: names[status]
-            })
-        }
-
-        var pie_title = that.pie_title;
-
-        var pie_series_title = that.pie_series_title;
-
-        var legend_data = [];
-        for (var name in names){
-            legend_data.push(names[name]);
-        }
-
-        var pie_div_id = that.pie_div_id;
-
-        refreshDrawPie(pie_data, pie_title, pie_series_title, legend_data, pie_div_id);
     }
 }
 
@@ -225,8 +210,14 @@ TrendsLine.prototype.initPullDrawKeywords = function(){
     this.call_async_ajax_request(ajax_url, this.ajax_method, range_keywords_callback);
 
     function range_keywords_callback(data){
-        // console.log(data);
-        refreshDrawKeywords(min_keywords_size, max_keywords_size, data, emotion);
+        var keywords_dict = {};
+        for(var e in data){
+            var d = data[e];
+            for(var idx in d){
+                keywords_dict[d[idx][0]] += d[idx][1];
+            }
+        }
+        refreshDrawKeywords(min_keywords_size, max_keywords_size, keywords_dict, emotion);
     }
 }
 
@@ -284,28 +275,77 @@ function refreshDrawKeywords(min_keywords_size, max_keywords_size, keywords_data
     }
 }
 
-// instance method, 初始化时获取关键微博数据
-TrendsLine.prototype.initPullWeibos = function(){
+TrendsLine.prototype.initPullDrawWeibos = function(){
     var names = this.names;
-
     var weibos_data = [];
     that = this;
-    for (var name in names){
-        var ajax_url = this.weibos_ajax_url(this.query, this.end_ts, this.during, name, this.top_weibos_limit);
-        this.call_sync_ajax_request(ajax_url, this.ajax_method, range_weibos_callback);
-    }
+    var ajax_url = this.weibos_ajax_url(this.query, this.end_ts, this.during, 0, this.one_page_info_limit);
+    this.call_async_ajax_request(ajax_url, this.ajax_method, range_weibos_callback);
 
     function range_weibos_callback(data){
-        // console.log(data);
-         // for(var name in names){
-            // if(name in data){
-                var weibos_list = data;
-                that.range_weibos_data= weibos_list;
-            // }
-        // }
+        var info_list = [];
+        for(var name in data){
+            for(var i in data[name]){
+                info_list.push(data[name][i]);
+            }
+        }
+
+        var html = "";
+        data = info_list;
+        var length = data.length;
+        for(var i = 0; i < length; i += 1){
+            var da = data[i];
+            var sentiment = da['sentiment'];
+            if(sentiment == 1){
+                sentiment = '积极';
+            }
+            else{
+                sentiment = '消极';
+            }
+            var uid = da['_id'];
+            var name = da['user_name'];
+            var title = da['title'];
+            var text = da['content'];
+            var clicks_count = da['clicks'];
+            var reply_count = da['replies'];
+            var lastreply_time = da['lastReplyTime'];
+            var releasetime = da['releaseTime'];
+            var weibo_link = da['url'];
+            var user_link = da['user_url'];
+            var user_image_link = '/static/img/unknown_profile_image.gif';
+            html += '<li class="item"><div class="weibo_face"><a target="_blank" href="' + user_link + '">';
+            html += '<img src="' + user_image_link + '">';
+            html += '</a></div>';
+            html += '<div class="weibo_detail">';
+            html += '<p><h4>昵称:<a class="undlin" target="_blank" href="' + user_link  + '">' + name + '</a>&nbsp;&nbsp;发布&nbsp;&nbsp;【' + title + '】：' + text + '（' + sentiment + '）</h4></p>';
+            html += '<div class="weibo_info">';
+            html += '<div class="weibo_pz">';
+            html += '<h5>';
+            html += '<a class="undlin" href="javascript:;" target="_blank">点击数(' + clicks_count + ')</a>&nbsp;&nbsp;|&nbsp;&nbsp;';
+            html += '<a class="undlin" href="javascript:;" target="_blank">回复数(' + reply_count+ ')</a></div>';
+            html += '<div class="m">';
+             html += '</h5>';
+            html += '<h5>';
+            html += '<a class="undlin" target="_blank" href="' + weibo_link + '">发表时间' + releasetime + '</a>-';
+            html += '<a target="_blank" href="' + weibo_link + '">帖子页面</a>-';
+            html += '<a target="_blank" href="' + user_link + '">用户页面</a>';
+             html += '</h5>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '</li>';
+        }
+
+        $("#weibo_ul").append(html);
+        $("#content_control_height").css("height", $("#weibo_ul").css("height"));
+
+        that.post_offset += that.one_page_info_limit;
+        $("#more_information").click(function(){
+            var ajax_url = that.weibos_ajax_url(that.query, that.end_ts, that.during, that.post_offset, that.one_page_info_limit);
+            that.call_async_ajax_request(ajax_url, that.ajax_method, range_weibos_callback);
+        });
     }
 }
-
 
 function refreshDrawWeibos(select_name, weibos_obj,length){
     var select_name = 'negative';
@@ -333,9 +373,7 @@ function refreshDrawWeibos(select_name, weibos_obj,length){
         var weibo_link = da['url'];
         var user_link = da['user_url'];
         var user_image_link = da['profile_image_url'];
-        // if (user_image_link == 'unknown'){
-            user_image_link = '/static/img/unknown_profile_image.gif';
-        // }
+        var user_image_link = '/static/img/unknown_profile_image.gif';
         html += '<li class="item"><div class="weibo_face"><a target="_blank" href="' + user_link + '">';
         html += '<img src="' + user_image_link + '">';
         html += '</a></div>';
@@ -376,16 +414,6 @@ function refreshDrawWeibos(select_name, weibos_obj,length){
     $("#weibo_list").append(html);
 }
 
-// instance method, 初始化绘制关键微博列表
-TrendsLine.prototype.initDrawWeibos = function(){
-    var weibos_obj = this.range_weibos_data;
-    var select_name = 'happy';
-    var length = 5;
-    refreshDrawWeibos(select_name, weibos_obj, length);
-    // bindSentimentTabClick(weibos_obj);
-    bindmore_weibo(weibos_obj);
-}
-
 function bindmore_weibo(weibos_obj){
 var length = 5;
 var select_sentiment ='';
@@ -398,8 +426,6 @@ var select_sentiment ='';
   //   });
   $("#more_imformation").click(function(){	
 	length = length + 5;
-// console.log(length);
-// console.log(weibos_obj);
 	if(length > 20){
 	   length = weibos_obj[select_sentiment].length;	
 	}
@@ -422,23 +448,6 @@ function bindSentimentTabClick(weibos_obj){
     });
 }
 
-// $(document).ready(function(){
-//     get_trenddata();
-// //  })
-// function get_trenddata(){
-//     var query = '股票';
-//     var during = 900;
-//     $.ajax({
-//       url: "/guming/sentiment/?query="+ query  + '&during=' + during,
-//       dataType : "json",
-//       type : 'GET',
-//       async: false,
-//       success: function(data){
-//         console.log(data);
-//         // request_callback(data);
-//       }  
-//   }) ; 
-// }
 // instance method, 获取数据并绘制趋势图
 TrendsLine.prototype.pullDrawTrend = function(){
     var trends_title = this.trend_title;
@@ -451,170 +460,249 @@ TrendsLine.prototype.pullDrawTrend = function(){
     var xAxisTitleText = '时间';
     var yAxisTitleText = '数量';
     var series_data = [{
-            name: '积极',
+            name: '总量积极',
             data: [],
-            id: 'happy',
+            id: 'positive',
             color: '#11c897',
             marker : {
                 enabled : false,
+            }   
+        },
+        {
+            name: '总量消极',
+            data: [],
+            id: 'negative',
+            color: '#fa7256',
+            marker: {
+                enabled: false,
             }
-        }]
+        },
+        {
+            name: '股东积极',
+            data: [],
+            id: 'positive_stock',
+            color: '#666',
+            marker : {
+                enabled : false,
+            }   
+        },
+        {
+            name: '股东消极',
+            data: [],
+            id: 'negative_stock',
+            color: '#fa7256',
+            marker: {
+                enabled: false,
+            }
+        },
+        {
+            name: '非股东积极',
+            data: [],
+            id: 'positive_ustock',
+            color: '#6e87d7',
+            marker : {
+                enabled : false,
+            }   
+        },
+        {
+            name: '非股东消极',
+            data: [],
+            id: 'negative_ustock',
+            color: '#b172c5',
+            marker: {
+                enabled: false,
+            }
+        }
+    ]
 
     var that = this;
     myChart = display_trend(that, trend_div_id, this.query, pointInterval, start_ts, end_ts, trends_title, series_data, xAxisTitleText, yAxisTitleText);
     this.trend_chart = myChart;
 }
 
-function  pull_line_data(query,during,series,data,ts){
-                // var query = '股票';
-                // var during = 900;
-                // var ts  = 1412937031;
-                for (var i = 0 ; i < 12; i ++){
-                        $.ajax({
-                          url: "/guming/sentiment/?query="+ query  + '&during=' + during+'&ts='+ ts,
-                          dataType : "json",
-                          type : 'GET',
-                          async: false,
-                          success: function(data){
-                                pull_line_host_data(query,during,series,data,ts);
+function pull_emotion_count(that, query, emotion_type, total_days, times, begin_ts, during, count_series){
+    var names = that.names;
 
-                         }  
-                    }) ; 
-                        ts  = ts + i * 900;
+    if(times > total_days){
+        return;
+    }
+
+    var ts = begin_ts + times * during;
+    var ajax_url = "/guming/sentiment/?ts=" + ts + '&during=' + during + '&emotion=' + emotion_type + '&query=' + query;
+    $.ajax({
+        url: ajax_url,
+        type: "GET",
+        dataType:"json",
+        success: function(data){
+            var isShift = false;
+            var total_count = 0;
+            var count_obj = {};
+            for(var name in names){
+                if(name in data){
+                    var count = data[name];
+                    count_obj[name] = count;
+                    total_count += count;
                 }
-
-           
-}
-
-function pull_line_host_data(query,during,series,data,ts){
-                // var query = '股票';
-                // var during = 900;
-                var host_data = data;
-                var host_postive_pencnet ;
-                var host_negative_pencent;
-                var postive_pencent ;
-                var negative_pencent ;
-                var all_postive_pencent; 
-                var all_negative_pencent ;
-                var all_count;
-                var all_postive_count;
-                var all_negative_count ;
-                var time;
-                $.ajax({
-                      url: "/guming/sentiment/?query="+ query  + '&during=' + during+'&stockholder=0'+'&ts='+ ts,
-                      dataType : "json",
-                      type : 'GET',
-                      async: false,
-                      success: function(data){
-
-                                all_postive_count = host_data["postive"]+ host_data["postive"];
-                                all_negative_count = host_data["negative"] = data["negative"];
-                                all_count = all_negative_count + all_postive_count;
-                                
-                                host_postive_pencnet = host_data['postive']/(host_data["negative"]+host_data["postive"])*1.0;
-                                host_negative_pencent = host_data['negative']/(host_data["negative"]+host_data["postive"])*1.0;
-                                
-                                postive_pencent = data['postive']/(data["negative"]+data["postive"])*1.0;
-                                negative_pencent = data['negative']/(data["negative"]+data["postive"])*1.0;
-
-                                all_postive_pencent = all_postive_count/all_count*1.0;
-                                all_negative_pencent =  all_negative_count / all_count*1.0;
-                                time = new Date(parseInt(ts) * 1000).toLocaleString().replace(/:\d{1,2}$/,' ');
-                                
-                                series[0].addPoint([ts*1000,all_postive_pencent]);
-                                 series[1].addPoint([ts*1000,all_negative_pencent]);
-                                 series[2].addPoint([ts*1000,host_postive_pencnet]);
-                                 series[3].addPoint([ts*1000,host_negative_pencent]);
-                                series[4].addPoint([ts*1000, postive_pencent]);
-                                 series[5].addPoint([ts*1000, negative_pencent]);
-                           
-                     }  
-                }) ; 
+            }
+            that.trend_count_obj['ts'].push(ts);
+            if(total_count > 0){
+                for(var name in count_obj){
+                    var count = count_obj[name];
+                    var ratio = parseInt(count * 10000 / total_count) / 10000.0;
+                    count_series[name].addPoint([ts * 1000, count], true, isShift);
+                    that.trend_count_obj['count'][name].push([ts * 1000, count]);
+                    that.trend_count_obj['ratio'][name].push([ts * 1000, ratio]);
+                }
+            }
+            else{
+                for(var name in count_obj){
+                    count_series[name].addPoint([ts * 1000, 0], true, isShift);
+                    that.trend_count_obj['count'][name].push([ts * 1000, 0]);
+                    that.trend_count_obj['ratio'][name].push([ts * 1000, 0.0]);
+                }
+            }
+            times++;
+            pull_emotion_count(that, query, emotion_type, total_days, times, begin_ts, during, count_series);
+        }
+    });
 }
 
 function display_trend(that, trend_div_id, query, during, begin_ts, end_ts, trends_title, series_data, xAxisTitleText, yAxisTitleText){
- 
-   Highcharts.setOptions({
+    Highcharts.setOptions({
         global: {
             useUTC: false
         }
     });
 
-    $('#' + trend_div_id).highcharts({
+    var names = that.names;
 
+    var chart_obj = $('#' + trend_div_id).highcharts({
         chart: {
             type: 'spline',// line,
             animation: Highcharts.svg, // don't animate in old IE
             events: {
                 load: function() {
-                    series = this.series;
-                    pull_line_data(query,during,series,end_ts);
+                    var total_nodes = (end_ts - begin_ts) / during;
+                    var times_init = 0;
+
+                    var count_series = {};
+                    var idx = 0;
+                    for(var name in names){
+                        count_series[name] = this.series[idx];
+                        idx += 1;
+                    }
+                    pull_emotion_count(that, query, 'positive', total_nodes, times_init, begin_ts, during, count_series);
+                    pull_emotion_count(that, query, 'negative', total_nodes, times_init, begin_ts, during, count_series);
+                    pull_emotion_count(that, query, 'positive_stock', total_nodes, times_init, begin_ts, during, count_series);
+                    pull_emotion_count(that, query, 'negative_stock', total_nodes, times_init, begin_ts, during, count_series);
+                    pull_emotion_count(that, query, 'positive_ustock', total_nodes, times_init, begin_ts, during, count_series);
+                    pull_emotion_count(that, query, 'negative_ustock', total_nodes, times_init, begin_ts, during, count_series);
                 }
             }
         },
-        title: {
-            text: '',
-        },
-        subtitle: {
-            text: '',
-        },
-        xAxis: {
-            type: 'datetime',
-            tickPixelInterval: 150
-        },
-        yAxis: {
-            title: {
-                text: ''
-            },
-            plotLines: [{
-                value: 0,
-                width: 1,
-                color: '#808080'
-            }]
-        },
-        tooltip: {
-            valueSuffix: '°C'
-        },
-        legend: {
-	   itemStyle : {
-        		'fontSize' : '18px'
-           },
-            layout: 'vertical',
-            align: 'right',
-            verticalAlign: 'middle',
-            borderWidth: 0
-        },
-        series: [{
-            name: '总量积极',
-            data: [],
-        }, {
-            name: '总量消极',
-            data: [],
-        },
-	 {
-            name: '股东积极',
-            data: [],
-	    visible:false
-        },
-        {
-            name: '股东消极',
-            data: [],
-	    visible:false
-        },
-         {
-            name: '非股东积极',
-            data: [],
-        visible:false
-        },
-        {
-            name: '非股东消极',
-            data: [],
-        visible:false
-        }
-      ]
-    });
-}
+        plotOptions:{ 
+            line:{ 
+                events: { 
+                    legendItemClick: function () { }
+                } 
+            }
+        }, 
+        title : { 
+            text: '走势分析图', // trends_title 
+            margin: 20, 
+            style: { 
+                color: '#666', 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                fontFamily: 'Microsoft YaHei' 
+            }
+        }, 
 
+        // 导出按钮汉化 
+        lang: { 
+            printChart: "打印", 
+            downloadJPEG: "下载JPEG 图片", 
+            downloadPDF: "下载PDF文档", 
+            downloadPNG: "下载PNG 图片", 
+            downloadSVG: "下载SVG 矢量图", 
+            exportButtonTitle: "导出图片" 
+        }, 
+        rangeSelector: { 
+            selected: 4, 
+            inputEnabled: false, 
+            buttons: [{ 
+                type: 'week', 
+                count: 1, 
+                text: '1w' 
+            }, { 
+                type: 'month', 
+                count: 1, 
+                text: '1m' 
+            }, { 
+                type: 'month', 
+                count: 3, 
+                text: '3m' 
+            }] 
+        }, 
+        xAxis: { 
+            title: { 
+                enabled: true, 
+                text: xAxisTitleText, 
+                style: { 
+                    color: '#666', 
+                    fontWeight: 'bold', 
+                    fontSize: '12px', 
+                    fontFamily: 'Microsoft YaHei' 
+                } 
+            }, 
+            type: 'datetime', 
+            tickPixelInterval: 150 
+        }, 
+        yAxis: { 
+            min: 0, 
+            title: { 
+                enabled: true, 
+                text: yAxisTitleText, 
+                style: { 
+                    color: '#666', 
+                    fontWeight: 'bold', 
+                    fontSize: '12px', 
+                    fontFamily: 'Microsoft YaHei' 
+                } 
+            }, 
+        },
+        tooltip: { 
+            valueDecimals: 2, 
+            xDateFormat: '%Y-%m-%d %H:%M:%S' 
+        }, 
+
+        legend: { 
+            layout: 'horizontal', 
+            //verticalAlign: true, 
+            //floating: true, 
+            align: 'center', 
+            verticalAlign: 'bottom', 
+            x: 0, 
+            y: -2, 
+            borderWidth: 1, 
+            itemStyle: { 
+                color: '#666', 
+                fontWeight: 'bold', 
+                fontSize: '12px', 
+                fontFamily: 'Microsoft YaHei' 
+            } 
+            //enabled: true, 
+            //itemHiddenStyle: { 
+               //color: 'white' 
+            //} 
+        }, 
+        exporting: { 
+            enabled: true 
+        }, 
+        series: series_data 
+    }); 
+    return chart_obj; 
+} 
 
 function call_peak_ajax(that, series, data_list, ts_list, during, emotion){
     var names = that.names;
@@ -652,7 +740,6 @@ function call_peak_ajax(that, series, data_list, ts_list, during, emotion){
 
                     peakDrawTip(click_ts, emotion, title);
                     peakPullDrawKeywords(click_ts, emotion, title);
-                    peakPullDrawPie(click_ts, emotion, title);
                     peakPullDrawWeibos(click_ts, emotion, title);
                 }
             }
@@ -673,22 +760,6 @@ function call_peak_ajax(that, series, data_list, ts_list, during, emotion){
         that.call_async_ajax_request(ajax_url, that.ajax_method, callback);
         function callback(data){
             refreshDrawKeywords(min_keywords_size, max_keywords_size, data[emotion], emotion);
-        }
-    }
-
-    function peakPullDrawPie(click_ts, emotion, title){
-        var ajax_url = that.pie_ajax_url(that.query, click_ts, that.pointInterval);
-        that.call_async_ajax_request(ajax_url, that.ajax_method, callback);
-        function callback(data){
-            var pie_data = [];
-            for (var status in data){
-                var count = data[status];
-                pie_data.push({
-                    value: count,
-                    name: names[status]
-                })
-            }
-            refreshDrawPie(pie_data, pie_title, pie_series_title, legend_data, pie_div_id);
         }
     }
 
@@ -971,16 +1042,9 @@ function get_peaks(that, series, data_obj, ts_list, during){
 //})();
 
 
-var START_TS = 1378051200;
-var END_TS = 1412937031;
 var POINT_INTERVAL = 900;
-var QUERY = "股票";
 
-
-tl = new TrendsLine(QUERY, START_TS, END_TS, POINT_INTERVAL)
+tl = new TrendsLine(QUERY, END_TS - DURING, END_TS, POINT_INTERVAL)
 tl.pullDrawTrend();
-tl.initPullDrawPie();
 tl.initPullDrawKeywords();
-tl.initPullWeibos();
-tl.initDrawWeibos();
-
+tl.initPullDrawWeibos();

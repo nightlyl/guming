@@ -14,7 +14,7 @@
     <!--
     <link rel="icon" href="../../favicon.ico">-->
 
-    <title>{% block title %}{% endblock %} - {% block module_title %}{% endblock %} - 舆情案例管理系统</title>
+    <title>{% block title %}{% endblock %} - {% block module_title %}{% endblock %} - APP</title>
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
@@ -276,8 +276,8 @@
 
     <!-- Bootstrap core JS -->
     <script src="/static/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
-    <script src="{{ url_for('static', filename='js/moment.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/datarangepiker.js') }}"></script>
+    <script src="/static/js/moment.js"></script>
+    <script src="/static/js/datarangepiker.js"></script>
     {% block head_js %}
     {% endblock head_js %}
 
@@ -285,87 +285,13 @@
 
 <body>
 {% block navbar %}
-
-
-  
-
-       
-                {% block content %}
-                {% endblock content %}
-     
-
+{% block content %}
+{% endblock content %}
 {% endblock navbar %}
-
     <script>
-        var all_startDate = new Date('09/01/2013');
-        var all_endDate = new Date('09/21/2013');
-        var all_maxDate = new Date('09/21/2013');
-        var all_minDate = new Date('09/01/2013');
-        var week_ago = subtract(all_endDate,7);
-        //var month_ago = subtract(all_endDate,30);
-        //var 3month_ago = subtract(all_endDate,90);
-
-        function subtract(date,days){
-            var nd = new Date(date);
-            nd = nd.valueOf();
-            nd = nd - days * 24 * 60 * 60 * 1000;
-            nd = new Date(nd);
-            var y = nd.getFullYear();
-            var m = nd.getMonth()+1;
-            var d = nd.getDate();
-            if(m <= 9) m = "0"+m;
-            if(d <= 9) d = "0"+d; 
-            var cdate = y+"-"+m+"-"+d;
-            return cdate;
-        }
-        $('#reportrange').daterangepicker({
-            ranges: {
-                '今天': [all_endDate, all_endDate],
-                '最近7天': [week_ago, all_endDate],
-            },
-            startDate: all_startDate,
-            endDate: all_endDate,
-            minDate: all_minDate,
-            maxDate: all_maxDate
-        },
-        function(start, end) {
-            $('#reportrange span').html(start.format('YYYYMMDD') + '-' + end.format('YYYYMMDD'));
-        }
-        );
-
-        $("#select_dur").change(function(){
-            $('#all_durtime').val($(this).children('option:selected').val());
-        });
-
-        $("input[name='optionsRadios']").on("click", function(){
-            $('#yaosu_input').val($(this).val());
-        });
-
-        $("#submit_request").click(function(){
-            var QUERY = document.getElementById('keyword_input').value;
-            var TIME_RANGE = $('#all_time').html();
-            var POINT_INTERVAL = document.getElementById('all_durtime').value;
-            var YAOSU = $('#yaosu_input').val();
-            window.location.href = "/index/" + YAOSU + "/?query=" + QUERY + "&time_range=" + TIME_RANGE + "&point_interval=" + POINT_INTERVAL;
-        });
-
-        function date2ts(date){
-            // 20130901
-            var year = date.substring(0, 4);
-            var month = date.substring(4, 6);
-            var day = date.substring(6, 8);
-            return new Date(year, month-1, day).getTime() / 1000;
-        }
-        var QUERY = document.getElementById('keyword_input').value;
-        var TIME_RANGE = $('#all_time').html();
-        var START_TS = date2ts(TIME_RANGE.split('-')[0]);
-        var END_TS = date2ts(TIME_RANGE.split('-')[1]) + 3600 * 24;
-        var POINT_INTERVAL = document.getElementById('all_durtime').value;
-        var YAOSU = $('#yaosu_input').val();
-        console.log(QUERY);
-        console.log(START_TS);
-        console.log(END_TS);
-        console.log(POINT_INTERVAL);
+        var QUERY = "{{ topic }}";
+        var END_TS = "{{ end_ts }}";
+        var DURING = "{{ pointInterval }}";
     </script>
     {% block tail_js %}
     {% endblock tail_js %}

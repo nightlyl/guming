@@ -16,7 +16,7 @@ def get_default_timerange():
     return u'20130902-20130907'
 
 def get_default_topic():
-    return u'东盟,博览会'
+    return u'股票'
 
 def get_default_pointInterval():
     return {'zh': u'1小时', 'en': 3600}
@@ -33,7 +33,7 @@ def get_deep_yaosus():
                       ('semantic', u'语义分析'))}
 
 default_timerange = get_default_timerange()
-default_topic = get_default_topic()
+default_topic = None
 default_pointInterval = get_default_pointInterval()
 pointIntervals = get_pointIntervals()
 gaishu_yaosus = get_gaishu_yaosus()
@@ -42,52 +42,36 @@ deep_yaosus = get_deep_yaosus()
 
 @mod.route('/moodlens/')
 def moodlens():
-    # 要素
-    yaosu = 'moodlens'
-
     # 话题关键词
     topic = request.args.get('query', default_topic)
+    if topic == 'None':
+        topic = None
 
-    # 时间范围: 20130901-20130901
-    time_range = request.args.get('time_range', default_timerange)
+    end_ts = request.args.get('ts', int(time.time()))
 
     # 时间粒度: 3600
-    point_interval = request.args.get('point_interval', None)
+    point_interval = int(request.args.get('during', 3600))
     if not point_interval:
         point_interval = default_pointInterval
-    else:
-        for pi in pointIntervals:
-            if pi['en'] == int(point_interval):
-                point_interval = pi
-                break
 
-    return render_template('index/moodlens.html', yaosu=yaosu, time_range=time_range, \
-            topic=topic, pointInterval=point_interval, pointIntervals=pointIntervals, \
-            gaishu_yaosus=gaishu_yaosus, deep_yaosus=deep_yaosus)
+    return render_template('index/moodlens.html', end_ts=end_ts, \
+            topic=topic, pointInterval=point_interval)
 
 
 @mod.route('/zhibiao/')
 def zhibiao():
-        # 要素
-    yaosu = 'zhibiao'
-
     # 话题关键词
     topic = request.args.get('query', default_topic)
+    if topic == 'None':
+        topic = None
 
-    # 时间范围: 20130901-20130901
-    time_range = request.args.get('time_range', default_timerange)
+    end_ts = request.args.get('ts', int(time.time()))
 
     # 时间粒度: 3600
-    point_interval = request.args.get('point_interval', None)
+    point_interval = int(request.args.get('during', 3600))
     if not point_interval:
         point_interval = default_pointInterval
-    else:
-        for pi in pointIntervals:
-            if pi['en'] == int(point_interval):
-                point_interval = pi
-                break
 
-    return render_template('index/zhibiao.html', yaosu=yaosu, time_range=time_range, \
-            topic=topic, pointInterval=point_interval, pointIntervals=pointIntervals, \
-            gaishu_yaosus=gaishu_yaosus, deep_yaosus=deep_yaosus)
+    return render_template('index/zhibiao.html', end_ts=end_ts, \
+            topic=topic, pointInterval=point_interval)
 
